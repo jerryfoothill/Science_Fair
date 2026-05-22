@@ -1,5 +1,5 @@
-import { CubicSpline, calculateDragForce, getInitialPresets } from './math.js?v=2';
-import { WindTunnel } from './windtunnel.js?v=2';
+import { CubicSpline, calculateDragForce, getInitialPresets } from './math.js?v=3';
+import { WindTunnel } from './windtunnel.js?v=3';
 
 document.addEventListener('DOMContentLoaded', () => {
     // 1. Load initial physics data presets

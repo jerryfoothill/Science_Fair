@@ -86,14 +86,7 @@ export class WindTunnel {
         dirLight.shadow.camera.bottom = -d;
         this.scene.add(dirLight);
 
-        // Neon ambient lighting for highlights
-        const blueLight = new THREE.PointLight(0x00f2fe, 3, 15);
-        blueLight.position.set(3, 2, 2);
-        this.scene.add(blueLight);
-
-        const pinkLight = new THREE.PointLight(0xff007f, 3, 15);
-        pinkLight.position.set(-3, 2, -5);
-        this.scene.add(pinkLight);
+        // Colored point lights are omitted so the viewport does not show red/blue marker spots.
     }
 
     initTunnelEnvironment() {
