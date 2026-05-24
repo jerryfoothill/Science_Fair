@@ -3,16 +3,62 @@ import { WindTunnel } from './windtunnel.js?v=3';
 
 document.addEventListener('DOMContentLoaded', () => {
     // 1. Load initial physics data presets
-    const preset = getInitialPresets();
-    const distances = [...preset.distances];
-    const dragCoefficients = [...preset.dragCoefficients];
+    const cdPreset = getInitialPresets();
+    const distances = [...cdPreset.distances];
+    const dragCoefficients = [...cdPreset.dragCoefficients];
+
+    const experimentRows = [
+        { distanceCm: 0, averageForce: 0.02, q1: 0.019, q3: 0.022 },
+        { distanceCm: 2, averageForce: 0.017, q1: 0.016, q3: 0.017 },
+        { distanceCm: 4, averageForce: 0.012, q1: 0.011, q3: 0.016 },
+        { distanceCm: 6, averageForce: 0.014, q1: 0.0128, q3: 0.015 },
+        { distanceCm: 8, averageForce: 0.023, q1: 0.022, q3: 0.024 },
+        { distanceCm: 10, averageForce: 0.026, q1: 0.025, q3: 0.027 },
+        { distanceCm: 12, averageForce: 0.016, q1: 0.013, q3: 0.0183 },
+        { distanceCm: 14, averageForce: 0.015, q1: 0.013, q3: 0.016 },
+        { distanceCm: 16, averageForce: 0.025, q1: 0.0235, q3: 0.026 },
+        { distanceCm: 18, averageForce: 0.03, q1: 0.028, q3: 0.031 },
+        { distanceCm: 20, averageForce: 0.016, q1: 0.015, q3: 0.017 }
+    ];
+
+    const plotConfigs = {
+        force: {
+            label: 'F阻 / Faverage (N)',
+            yTitle: 'Average drag force F阻 (N)',
+            unit: ' N',
+            color: '#00f2fe',
+            background: 'rgba(0, 242, 254, 0.16)',
+            value: row => row.averageForce
+        },
+        iqr: {
+            label: 'IQR = Q3 - Q1 (N)',
+            yTitle: 'Interquartile range IQR (N)',
+            unit: ' N',
+            color: '#ff007f',
+            background: 'rgba(255, 0, 127, 0.16)',
+            value: row => Math.max(0, row.q3 - row.q1)
+        },
+        rate: {
+            label: 'R = IQR / Faverage (%)',
+            yTitle: 'Relative fluctuation R (%)',
+            unit: '%',
+            color: '#ffdd00',
+            background: 'rgba(255, 221, 0, 0.16)',
+            value: row => {
+                const iqr = Math.max(0, row.q3 - row.q1);
+                return row.averageForce > 0 ? (iqr / row.averageForce) * 100 : 0;
+            }
+        }
+    };
 
     let spline = new CubicSpline(distances, dragCoefficients);
     let chartInstance = null;
     let windTunnelInstance = null;
+    let activePlot = 'force';
 
     // 2. DOM Elements cache
     const tableBody = document.querySelector('#data-table tbody');
+    const plotTabs = document.querySelectorAll('.plot-tab');
     const distSlider = document.getElementById('distance-slider');
     const distSliderDisplay = document.getElementById('distance-slider-display');
     
@@ -56,176 +102,193 @@ document.addEventListener('DOMContentLoaded', () => {
         console.error("Three.js Wind Tunnel failed to initialize:", e);
     }
 
-    // 4. Build Editable Data Table
+    // 4. Build Editable Experimental Data Table
     function initTable() {
         tableBody.innerHTML = '';
-        distances.forEach((dist, idx) => {
+        experimentRows.forEach((rowData, idx) => {
             const row = document.createElement('tr');
-            
-            const distCell = document.createElement('td');
-            distCell.textContent = `${dist}m`;
-            distCell.style.fontFamily = "'JetBrains Mono', monospace";
-            row.appendChild(distCell);
-            
-            const cdCell = document.createElement('td');
-            const input = document.createElement('input');
-            input.type = 'number';
-            input.className = 'table-input';
-            input.min = '0.1';
-            input.max = '2.5';
-            input.step = '0.01';
-            input.value = dragCoefficients[idx].toFixed(2);
-            input.dataset.index = idx;
-            
-            input.addEventListener('change', (e) => {
-                const val = parseFloat(e.target.value);
-                const index = parseInt(e.target.dataset.index);
-                if (!isNaN(val) && val >= 0.1 && val <= 2.5) {
-                    dragCoefficients[index] = val;
-                    // Recalculate spline
-                    spline = new CubicSpline(distances, dragCoefficients);
-                    // Update chart and telemetry
-                    updateChart();
-                    updateTelemetry();
-                } else {
-                    // Revert invalid value
-                    e.target.value = dragCoefficients[index].toFixed(2);
-                }
+
+            ['distanceCm', 'averageForce', 'q1', 'q3'].forEach((field) => {
+                const cell = document.createElement('td');
+                const input = document.createElement('input');
+                input.type = 'number';
+                input.className = 'table-input';
+                input.min = '0';
+                input.step = field === 'distanceCm' ? '1' : '0.001';
+                input.value = field === 'distanceCm'
+                    ? rowData[field].toFixed(0)
+                    : rowData[field].toFixed(3);
+                input.dataset.index = idx;
+                input.dataset.field = field;
+
+                input.addEventListener('change', (e) => {
+                    const val = parseFloat(e.target.value);
+                    const index = parseInt(e.target.dataset.index);
+                    const targetField = e.target.dataset.field;
+
+                    if (!isNaN(val) && val >= 0) {
+                        experimentRows[index][targetField] = val;
+                        updateChart();
+                    } else {
+                        const original = experimentRows[index][targetField];
+                        e.target.value = targetField === 'distanceCm'
+                            ? original.toFixed(0)
+                            : original.toFixed(3);
+                    }
+                });
+
+                cell.appendChild(input);
+                row.appendChild(cell);
             });
-            
-            cdCell.appendChild(input);
-            row.appendChild(cdCell);
+
             tableBody.appendChild(row);
         });
     }
 
-    // 5. Initialize Chart.js Line Plot
+    // 5. Initialize Canvas plot for final experimental parameters
     function initChart() {
-        const ctx = document.getElementById('aerodynamics-chart').getContext('2d');
-        
-        // Generate smooth curve points using spline
-        const curvePoints = [];
-        for (let d = 0; d <= 20; d += 0.2) {
-            curvePoints.push({ x: d, y: spline.interpolate(d) });
-        }
-
-        // Clean air baseline (value at 20m)
-        const cleanAirCd = dragCoefficients[dragCoefficients.length - 1];
-
-        // Format raw points
-        const rawPoints = distances.map((d, i) => ({ x: d, y: dragCoefficients[i] }));
-
-        chartInstance = new Chart(ctx, {
-            type: 'line',
-            data: {
-                datasets: [
-                    {
-                        label: 'Spline Interpolation (Cd)',
-                        data: curvePoints,
-                        borderColor: '#00f2fe',
-                        borderWidth: 2,
-                        fill: false,
-                        pointRadius: 0,
-                        tension: 0.1
-                    },
-                    {
-                        label: 'Experimental Measurements',
-                        data: rawPoints,
-                        backgroundColor: '#a0aec0',
-                        borderColor: '#1f2833',
-                        borderWidth: 1,
-                        pointRadius: 5,
-                        pointHoverRadius: 7,
-                        showLine: false
-                    },
-                    {
-                        label: 'Active Tracking Point',
-                        data: [{ x: parseFloat(distSlider.value), y: spline.interpolate(parseFloat(distSlider.value)) }],
-                        backgroundColor: '#ff007f',
-                        borderColor: '#ffffff',
-                        borderWidth: 2,
-                        pointRadius: 7,
-                        pointHoverRadius: 9,
-                        showLine: false
-                    }
-                ]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                scales: {
-                    x: {
-                        type: 'linear',
-                        min: 0,
-                        max: 20,
-                        title: {
-                            display: true,
-                            text: 'Distance between Cars (meters)',
-                            color: '#a0aec0',
-                            font: { family: 'Outfit', size: 11 }
-                        },
-                        grid: { color: 'rgba(255,255,255,0.05)' },
-                        ticks: { color: '#a0aec0', font: { family: 'JetBrains Mono' } }
-                    },
-                    y: {
-                        min: 0.3,
-                        max: 1.5,
-                        title: {
-                            display: true,
-                            text: 'Drag Coefficient (Cd)',
-                            color: '#a0aec0',
-                            font: { family: 'Outfit', size: 11 }
-                        },
-                        grid: { color: 'rgba(255,255,255,0.05)' },
-                        ticks: { color: '#a0aec0', font: { family: 'JetBrains Mono' } }
-                    }
-                },
-                plugins: {
-                    legend: {
-                        display: true,
-                        labels: {
-                            color: '#c5c6c7',
-                            font: { family: 'Outfit', size: 10 }
-                        }
-                    },
-                    tooltip: {
-                        callbacks: {
-                            label: function(context) {
-                                return `${context.dataset.label}: ${context.raw.y.toFixed(3)}`;
-                            }
-                        }
-                    }
-                }
-            }
-        });
+        const canvas = document.getElementById('aerodynamics-chart');
+        chartInstance = {
+            canvas,
+            ctx: canvas.getContext('2d')
+        };
+        window.addEventListener('resize', updateChart);
+        updateChart();
     }
 
-    // Update chart data after table changes or active tracker moves
+    // Update final experimental parameter plots after table changes
     function updateChart() {
         if (!chartInstance) return;
 
-        // Generate smooth curve points
-        const curvePoints = [];
-        for (let d = 0; d <= 20; d += 0.2) {
-            curvePoints.push({ x: d, y: spline.interpolate(d) });
+        const sortedRows = [...experimentRows].sort((a, b) => a.distanceCm - b.distanceCm);
+        const config = plotConfigs[activePlot];
+        const activePoints = sortedRows.map(row => ({ x: row.distanceCm, y: config.value(row) }));
+        drawExperimentChart(config, activePoints);
+    }
+
+    function drawExperimentChart(config, points) {
+        const { canvas, ctx } = chartInstance;
+        const rect = canvas.parentElement.getBoundingClientRect();
+        const pixelRatio = window.devicePixelRatio || 1;
+        const width = Math.max(320, Math.floor(rect.width));
+        const height = Math.max(260, Math.floor(rect.height));
+        canvas.width = Math.floor(width * pixelRatio);
+        canvas.height = Math.floor(height * pixelRatio);
+        canvas.style.width = `${width}px`;
+        canvas.style.height = `${height}px`;
+        ctx.setTransform(pixelRatio, 0, 0, pixelRatio, 0, 0);
+        ctx.clearRect(0, 0, width, height);
+
+        const padding = { top: 46, right: 24, bottom: 48, left: 68 };
+        const plotWidth = width - padding.left - padding.right;
+        const plotHeight = height - padding.top - padding.bottom;
+        const xMin = 0;
+        const xMax = 20;
+        const rawMax = Math.max(...points.map(point => point.y), 0.001);
+        const yMax = rawMax * 1.18;
+        const xScale = value => padding.left + ((value - xMin) / (xMax - xMin)) * plotWidth;
+        const yScale = value => padding.top + plotHeight - (value / yMax) * plotHeight;
+
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.92)';
+        ctx.font = '700 14px Outfit, sans-serif';
+        ctx.textAlign = 'left';
+        ctx.fillText(config.label, padding.left, 24);
+
+        ctx.strokeStyle = 'rgba(255, 255, 255, 0.08)';
+        ctx.lineWidth = 1;
+        ctx.fillStyle = '#a0aec0';
+        ctx.font = '11px "JetBrains Mono", monospace';
+        ctx.textAlign = 'right';
+        ctx.textBaseline = 'middle';
+
+        for (let i = 0; i <= 5; i++) {
+            const yValue = (yMax / 5) * i;
+            const y = yScale(yValue);
+            ctx.beginPath();
+            ctx.moveTo(padding.left, y);
+            ctx.lineTo(width - padding.right, y);
+            ctx.stroke();
+            ctx.fillText(formatAxisValue(yValue, config.unit), padding.left - 10, y);
         }
-        chartInstance.data.datasets[0].data = curvePoints;
 
-        // Update raw points
-        chartInstance.data.datasets[1].data = distances.map((d, i) => ({ x: d, y: dragCoefficients[i] }));
-
-        // Update tracker point
-        const activeDist = parseFloat(distSlider.value);
-        let activeCd = spline.interpolate(activeDist);
-        
-        // If lead car is disabled, Cd is constant clean air value
-        if (!toggleLeadInput.checked) {
-            activeCd = dragCoefficients[dragCoefficients.length - 1];
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'top';
+        for (let x = 0; x <= 20; x += 5) {
+            const xPos = xScale(x);
+            ctx.beginPath();
+            ctx.moveTo(xPos, padding.top);
+            ctx.lineTo(xPos, height - padding.bottom);
+            ctx.stroke();
+            ctx.fillText(`${x}`, xPos, height - padding.bottom + 10);
         }
-        chartInstance.data.datasets[2].data = [{ x: activeDist, y: activeCd }];
 
-        // Update chart smoothly ('none' stops redraw transition animation lags)
-        chartInstance.update('none');
+        ctx.strokeStyle = 'rgba(255, 255, 255, 0.24)';
+        ctx.beginPath();
+        ctx.moveTo(padding.left, padding.top);
+        ctx.lineTo(padding.left, height - padding.bottom);
+        ctx.lineTo(width - padding.right, height - padding.bottom);
+        ctx.stroke();
+
+        ctx.fillStyle = '#a0aec0';
+        ctx.font = '12px Outfit, sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText('Rear car distance d (cm)', padding.left + plotWidth / 2, height - 20);
+
+        ctx.save();
+        ctx.translate(18, padding.top + plotHeight / 2);
+        ctx.rotate(-Math.PI / 2);
+        ctx.fillText(config.yTitle, 0, 0);
+        ctx.restore();
+
+        const gradient = ctx.createLinearGradient(0, padding.top, 0, height - padding.bottom);
+        gradient.addColorStop(0, config.background);
+        gradient.addColorStop(1, 'rgba(0, 0, 0, 0)');
+        ctx.beginPath();
+        points.forEach((point, index) => {
+            const x = xScale(point.x);
+            const y = yScale(point.y);
+            if (index === 0) {
+                ctx.moveTo(x, y);
+            } else {
+                ctx.lineTo(x, y);
+            }
+        });
+        ctx.lineTo(xScale(points[points.length - 1].x), height - padding.bottom);
+        ctx.lineTo(xScale(points[0].x), height - padding.bottom);
+        ctx.closePath();
+        ctx.fillStyle = gradient;
+        ctx.fill();
+
+        ctx.beginPath();
+        points.forEach((point, index) => {
+            const x = xScale(point.x);
+            const y = yScale(point.y);
+            if (index === 0) {
+                ctx.moveTo(x, y);
+            } else {
+                ctx.lineTo(x, y);
+            }
+        });
+        ctx.strokeStyle = config.color;
+        ctx.lineWidth = 2.5;
+        ctx.stroke();
+
+        points.forEach((point) => {
+            const x = xScale(point.x);
+            const y = yScale(point.y);
+            ctx.beginPath();
+            ctx.arc(x, y, 4, 0, Math.PI * 2);
+            ctx.fillStyle = '#07080d';
+            ctx.fill();
+            ctx.strokeStyle = config.color;
+            ctx.lineWidth = 2;
+            ctx.stroke();
+        });
+    }
+
+    function formatAxisValue(value, unit) {
+        if (unit === '%') return value.toFixed(0);
+        return value < 0.1 ? value.toFixed(3) : value.toFixed(2);
     }
 
     // 6. Update HUD readings and gauge details
@@ -347,6 +410,18 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         updateTelemetry();
         updateChart();
+    });
+
+    // Final plot selector tabs
+    plotTabs.forEach((tab) => {
+        tab.addEventListener('click', () => {
+            activePlot = tab.dataset.plot;
+            plotTabs.forEach(btn => {
+                btn.classList.toggle('active', btn === tab);
+                btn.setAttribute('aria-pressed', btn === tab ? 'true' : 'false');
+            });
+            updateChart();
+        });
     });
 
     // Camera preset clicks
