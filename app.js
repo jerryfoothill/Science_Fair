@@ -6,6 +6,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const cdPreset = getInitialPresets();
     const distances = [...cdPreset.distances];
     const dragCoefficients = [...cdPreset.dragCoefficients];
+    const baselineAirDensity = 1.225;
+    const baselineFrontalArea = 1.40;
 
     const experimentRows = [
         { distanceCm: 0, averageForce: 0.02, q1: 0.019, q3: 0.022 },
@@ -67,8 +69,10 @@ document.addEventListener('DOMContentLoaded', () => {
     const windSpeedVal = document.getElementById('wind-speed-val');
     const airDensityInput = document.getElementById('air-density');
     const airDensityVal = document.getElementById('air-density-val');
+    const airDensityImpact = document.getElementById('air-density-impact');
     const frontalAreaInput = document.getElementById('frontal-area');
     const frontalAreaVal = document.getElementById('frontal-area-val');
+    const frontalAreaImpact = document.getElementById('frontal-area-impact');
     const toggleLeadInput = document.getElementById('toggle-lead-car');
     
     // HUD elements
@@ -323,6 +327,8 @@ document.addEventListener('DOMContentLoaded', () => {
         hudDistance.textContent = `${dist.toFixed(2)} m`;
         hudCd.textContent = activeCd.toFixed(3);
         hudDragForce.textContent = `${dragForce.toFixed(1)} N`;
+        updateParameterImpact(airDensityImpact, airDensity / baselineAirDensity);
+        updateParameterImpact(frontalAreaImpact, area / baselineFrontalArea);
 
         // 6. Update Turbulence warning levels
         if (!leadActive) {
@@ -368,6 +374,20 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
+    function updateParameterImpact(element, factor) {
+        const percent = Math.round(factor * 100);
+        const delta = percent - 100;
+        const sign = delta > 0 ? '+' : '';
+        element.textContent = `Drag factor: ${percent}% (${sign}${delta}%)`;
+        element.classList.toggle('boost', delta >= 0);
+    }
+
+    function pulseDragForce() {
+        hudDragForce.classList.remove('value-pulse');
+        void hudDragForce.offsetWidth;
+        hudDragForce.classList.add('value-pulse');
+    }
+
     // 7. Bind Interactive Sliders & Inputs
 
     // Distance Slider
@@ -393,6 +413,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const val = parseFloat(e.target.value);
         airDensityVal.textContent = `${val.toFixed(3)} kg/m³`;
         updateTelemetry();
+        pulseDragForce();
     });
 
     // Frontal Area
@@ -400,6 +421,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const val = parseFloat(e.target.value);
         frontalAreaVal.textContent = `${val.toFixed(2)} m²`;
         updateTelemetry();
+        pulseDragForce();
     });
 
     // Toggle Lead Car

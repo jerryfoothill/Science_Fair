@@ -182,6 +182,40 @@ header {
     font-weight: bold;
 }
 
+.parameter-impact {
+    align-self: flex-end;
+    color: var(--neon-pink);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.72rem;
+    font-weight: 700;
+    opacity: 0.9;
+}
+
+.parameter-impact.boost {
+    color: var(--neon-cyan);
+    text-shadow: 0 0 8px var(--neon-cyan-glow);
+}
+
+.telemetry-card-value.value-pulse {
+    animation: valuePulse 0.28s ease-out;
+}
+
+@keyframes valuePulse {
+    0% {
+        transform: scale(1);
+        color: var(--text-primary);
+    }
+    45% {
+        transform: scale(1.06);
+        color: var(--neon-cyan);
+        text-shadow: 0 0 14px var(--neon-cyan-glow);
+    }
+    100% {
+        transform: scale(1);
+        color: var(--text-primary);
+    }
+}
+
 /* Custom UI Range Slider */
 input[type="range"] {
     -webkit-appearance: none;
