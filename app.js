@@ -80,8 +80,11 @@ document.addEventListener('DOMContentLoaded', () => {
     const hudCd = document.getElementById('hud-cd');
     const hudDragForce = document.getElementById('hud-drag-force');
     const hudTurbulence = document.getElementById('hud-turbulence');
-    const efficiencyGauge = document.getElementById('efficiency-gauge');
     const efficiencyPercent = document.getElementById('efficiency-percent');
+    const expCurrentForce = document.getElementById('exp-current-force');
+    const expCurrentIqr = document.getElementById('exp-current-iqr');
+    const expCurrentRate = document.getElementById('exp-current-rate');
+    const experimentTrendList = document.getElementById('experiment-trend-list');
     
     // Drag & Drop
     const viewportContainer = document.getElementById('viewport-container');
@@ -133,6 +136,8 @@ document.addEventListener('DOMContentLoaded', () => {
                     if (!isNaN(val) && val >= 0) {
                         experimentRows[index][targetField] = val;
                         updateChart();
+                        updateExperimentReadout();
+                        updateExperimentTrendList();
                     } else {
                         const original = experimentRows[index][targetField];
                         e.target.value = targetField === 'distanceCm'
@@ -183,7 +188,12 @@ document.addEventListener('DOMContentLoaded', () => {
         ctx.setTransform(pixelRatio, 0, 0, pixelRatio, 0, 0);
         ctx.clearRect(0, 0, width, height);
 
-        const padding = { top: 46, right: 24, bottom: 48, left: 68 };
+        const padding = {
+            top: 46,
+            right: 28,
+            bottom: 52,
+            left: width < 520 ? 118 : 148
+        };
         const plotWidth = width - padding.left - padding.right;
         const plotHeight = height - padding.top - padding.bottom;
         const xMin = 0;
@@ -212,7 +222,7 @@ document.addEventListener('DOMContentLoaded', () => {
             ctx.moveTo(padding.left, y);
             ctx.lineTo(width - padding.right, y);
             ctx.stroke();
-            ctx.fillText(formatAxisValue(yValue, config.unit), padding.left - 10, y);
+            ctx.fillText(formatAxisValue(yValue, config.unit), padding.left - 20, y);
         }
 
         ctx.textAlign = 'center';
@@ -236,10 +246,10 @@ document.addEventListener('DOMContentLoaded', () => {
         ctx.fillStyle = '#a0aec0';
         ctx.font = '12px Outfit, sans-serif';
         ctx.textAlign = 'center';
-        ctx.fillText('Rear car distance d (cm)', padding.left + plotWidth / 2, height - 20);
+        ctx.fillText('Rear car distance d (cm)', padding.left + plotWidth / 2, height - 22);
 
         ctx.save();
-        ctx.translate(18, padding.top + plotHeight / 2);
+        ctx.translate(26, padding.top + plotHeight / 2);
         ctx.rotate(-Math.PI / 2);
         ctx.fillText(config.yTitle, 0, 0);
         ctx.restore();
@@ -324,7 +334,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         // 5. Update HUD UI readouts
-        hudDistance.textContent = `${dist.toFixed(2)} m`;
+        hudDistance.textContent = `${dist.toFixed(2)} cm`;
         hudCd.textContent = activeCd.toFixed(3);
         hudDragForce.textContent = `${dragForce.toFixed(1)} N`;
         updateParameterImpact(airDensityImpact, airDensity / baselineAirDensity);
@@ -353,25 +363,84 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         }
 
-        // 7. Update circular gauge
+        // 7. Update theory savings readout
         efficiencyPercent.textContent = `${savings}%`;
-        const circumference = 314.16; // 2 * PI * r (r=50)
-        const offset = circumference - (savings / 100) * circumference;
-        efficiencyGauge.style.strokeDashoffset = offset;
-        
-        // Gauge color matches savings intensity (cyan for high savings, pink/red for low)
-        if (savings > 20) {
-            efficiencyGauge.style.stroke = "var(--neon-cyan)";
-            efficiencyGauge.style.filter = "drop-shadow(0 0 5px var(--neon-cyan))";
-        } else {
-            efficiencyGauge.style.stroke = "var(--neon-pink)";
-            efficiencyGauge.style.filter = "drop-shadow(0 0 5px var(--neon-pink))";
-        }
 
         // 8. Update Three.js positions
         if (windTunnelInstance) {
             windTunnelInstance.setDistance(dist);
         }
+
+        updateExperimentReadout();
+    }
+
+    function getInterpolatedExperiment(distanceCm) {
+        const sortedRows = [...experimentRows].sort((a, b) => a.distanceCm - b.distanceCm);
+        if (distanceCm <= sortedRows[0].distanceCm) return { ...sortedRows[0] };
+        if (distanceCm >= sortedRows[sortedRows.length - 1].distanceCm) return { ...sortedRows[sortedRows.length - 1] };
+
+        for (let i = 0; i < sortedRows.length - 1; i++) {
+            const left = sortedRows[i];
+            const right = sortedRows[i + 1];
+            if (distanceCm >= left.distanceCm && distanceCm <= right.distanceCm) {
+                const t = (distanceCm - left.distanceCm) / (right.distanceCm - left.distanceCm);
+                return {
+                    distanceCm,
+                    averageForce: lerp(left.averageForce, right.averageForce, t),
+                    q1: lerp(left.q1, right.q1, t),
+                    q3: lerp(left.q3, right.q3, t)
+                };
+            }
+        }
+
+        return { ...sortedRows[0] };
+    }
+
+    function lerp(start, end, t) {
+        return start + (end - start) * t;
+    }
+
+    function getExperimentMetrics(row) {
+        const iqr = Math.max(0, row.q3 - row.q1);
+        const rate = row.averageForce > 0 ? (iqr / row.averageForce) * 100 : 0;
+        return { force: row.averageForce, iqr, rate };
+    }
+
+    function updateExperimentReadout() {
+        if (!expCurrentForce || !expCurrentIqr || !expCurrentRate) return;
+
+        const activeDistance = parseFloat(distSlider.value);
+        const metrics = getExperimentMetrics(getInterpolatedExperiment(activeDistance));
+        expCurrentForce.textContent = `${metrics.force.toFixed(3)} N`;
+        expCurrentIqr.textContent = `${metrics.iqr.toFixed(3)} N`;
+        expCurrentRate.textContent = `${metrics.rate.toFixed(1)}%`;
+
+        if (experimentTrendList) {
+            const nearestDistance = Math.round(activeDistance / 2) * 2;
+            experimentTrendList.querySelectorAll('.mini-table-row').forEach(row => {
+                row.classList.toggle('active', parseFloat(row.dataset.distance) === nearestDistance);
+            });
+        }
+    }
+
+    function updateExperimentTrendList() {
+        if (!experimentTrendList) return;
+
+        experimentTrendList.innerHTML = '';
+        [...experimentRows]
+            .sort((a, b) => a.distanceCm - b.distanceCm)
+            .forEach(row => {
+                const metrics = getExperimentMetrics(row);
+                const item = document.createElement('div');
+                item.className = 'mini-table-row';
+                item.dataset.distance = row.distanceCm;
+                item.innerHTML = `
+                    <span>${row.distanceCm}cm</span>
+                    <span>${metrics.force.toFixed(3)}</span>
+                    <span>${metrics.iqr.toFixed(3)}</span>
+                `;
+                experimentTrendList.appendChild(item);
+            });
     }
 
     function updateParameterImpact(element, factor) {
@@ -393,7 +462,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // Distance Slider
     distSlider.addEventListener('input', (e) => {
         const val = parseFloat(e.target.value);
-        distSliderDisplay.textContent = `${val.toFixed(2)} m`;
+        distSliderDisplay.textContent = `${val.toFixed(2)} cm`;
         updateTelemetry();
         updateChart();
     });
@@ -537,5 +606,6 @@ document.addEventListener('DOMContentLoaded', () => {
     // 9. Initial setup execution
     initTable();
     initChart();
+    updateExperimentTrendList();
     updateTelemetry();
 });

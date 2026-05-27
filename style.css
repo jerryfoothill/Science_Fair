@@ -196,6 +196,45 @@ header {
     text-shadow: 0 0 8px var(--neon-cyan-glow);
 }
 
+.theory-readout {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 0.65rem;
+    margin-top: 0.25rem;
+}
+
+.readout-card,
+.distance-card {
+    background: rgba(0, 0, 0, 0.25);
+    border: 1px solid rgba(255, 255, 255, 0.04);
+    border-radius: 8px;
+    padding: 0.75rem;
+}
+
+.readout-label {
+    display: block;
+    margin-bottom: 0.25rem;
+    color: var(--text-secondary);
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+}
+
+.readout-card strong {
+    color: var(--text-primary);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 1.25rem;
+}
+
+.readout-card strong.highlight-cyan {
+    color: var(--neon-cyan);
+}
+
+.readout-card strong.highlight-pink {
+    color: var(--neon-pink);
+}
+
 .telemetry-card-value.value-pulse {
     animation: valuePulse 0.28s ease-out;
 }
@@ -250,6 +289,7 @@ input[type="range"].pink-slider::-webkit-slider-thumb {
 /* Editable Data Table */
 .table-container {
     overflow-y: auto;
+    overflow-x: hidden;
     max-height: 320px;
     border: 1px solid rgba(255, 255, 255, 0.05);
     border-radius: 6px;
@@ -257,6 +297,7 @@ input[type="range"].pink-slider::-webkit-slider-thumb {
 
 table {
     width: 100%;
+    table-layout: fixed;
     border-collapse: collapse;
     font-size: 0.9rem;
 }
@@ -299,7 +340,7 @@ tr:hover {
 
 .experiment-layout {
     display: grid;
-    grid-template-columns: minmax(360px, 0.9fr) minmax(520px, 1.4fr);
+    grid-template-columns: minmax(0, 0.95fr) minmax(0, 1.25fr);
     gap: 1rem;
     align-items: stretch;
 }
@@ -309,13 +350,29 @@ tr:hover {
 }
 
 .experiment-table table {
-    font-size: 0.82rem;
-    min-width: 640px;
+    font-size: 0.78rem;
 }
 
 .experiment-table th,
 .experiment-table td {
-    padding: 0.45rem 0.55rem;
+    padding: 0.42rem 0.45rem;
+}
+
+.experiment-table th:nth-child(1),
+.experiment-table td:nth-child(1) {
+    width: 18%;
+}
+
+.experiment-table th:nth-child(2),
+.experiment-table td:nth-child(2) {
+    width: 34%;
+}
+
+.experiment-table th:nth-child(3),
+.experiment-table td:nth-child(3),
+.experiment-table th:nth-child(4),
+.experiment-table td:nth-child(4) {
+    width: 24%;
 }
 
 .experiment-plot-panel {
@@ -491,6 +548,172 @@ tr:hover {
     backdrop-filter: blur(10px);
 }
 
+.distance-control-stack {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.experiment-readout-card,
+.slipstream-card {
+    background: rgba(0, 0, 0, 0.22);
+    border: 1px solid rgba(102, 252, 241, 0.14);
+    border-radius: 8px;
+    padding: 0.75rem;
+}
+
+.experiment-metric-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 0.5rem;
+    margin-top: 0.55rem;
+}
+
+.experiment-metric-grid div {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 0.75rem;
+    padding: 0.45rem 0.55rem;
+    border-radius: 6px;
+    background: rgba(255, 255, 255, 0.035);
+}
+
+.experiment-metric-grid span,
+.mini-table-head,
+.mini-table-row span:first-child {
+    color: var(--text-secondary);
+    font-size: 0.72rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+}
+
+.experiment-metric-grid strong {
+    color: var(--neon-cyan);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 1rem;
+}
+
+.experiment-mini-table {
+    margin-top: 0.75rem;
+    max-height: 190px;
+    overflow-y: auto;
+    overflow-x: hidden;
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    border-radius: 6px;
+}
+
+.mini-table-head,
+.mini-table-row {
+    display: grid;
+    grid-template-columns: 0.7fr 1fr 1fr;
+    gap: 0.5rem;
+    padding: 0.38rem 0.5rem;
+}
+
+.mini-table-head {
+    background: rgba(0, 0, 0, 0.32);
+}
+
+.mini-table-row {
+    border-top: 1px solid rgba(255, 255, 255, 0.05);
+    color: var(--text-primary);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.74rem;
+}
+
+.mini-table-row.active {
+    color: var(--neon-pink);
+    background: rgba(255, 0, 127, 0.08);
+}
+
+.slipstream-visual {
+    position: relative;
+    height: 82px;
+    margin-top: 0.5rem;
+    border-radius: 6px;
+    overflow: hidden;
+    background:
+        linear-gradient(90deg, rgba(0, 242, 254, 0.08), rgba(255, 0, 127, 0.06)),
+        rgba(255, 255, 255, 0.025);
+}
+
+.lead-car-shape,
+.rear-car-shape {
+    position: absolute;
+    top: 29px;
+    width: 42px;
+    height: 20px;
+    border: 1px solid currentColor;
+    border-radius: 3px 10px 10px 3px;
+}
+
+.lead-car-shape {
+    left: 16px;
+    color: var(--neon-cyan);
+    box-shadow: 0 0 10px var(--neon-cyan-glow);
+}
+
+.rear-car-shape {
+    right: 18px;
+    color: var(--neon-pink);
+    box-shadow: 0 0 10px var(--neon-pink-glow);
+}
+
+.lead-car-shape::before,
+.rear-car-shape::before,
+.lead-car-shape::after,
+.rear-car-shape::after {
+    content: '';
+    position: absolute;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: currentColor;
+    bottom: -5px;
+}
+
+.lead-car-shape::before,
+.rear-car-shape::before {
+    left: 5px;
+}
+
+.lead-car-shape::after,
+.rear-car-shape::after {
+    right: 5px;
+}
+
+.wake-streams span {
+    position: absolute;
+    left: 62px;
+    right: 66px;
+    height: 2px;
+    border-radius: 999px;
+    background: linear-gradient(90deg, rgba(0, 242, 254, 0.95), rgba(255, 0, 127, 0.12));
+    box-shadow: 0 0 8px rgba(0, 242, 254, 0.35);
+}
+
+.wake-streams span:nth-child(1) {
+    top: 24px;
+    transform: rotate(-7deg);
+}
+
+.wake-streams span:nth-child(2) {
+    top: 35px;
+    transform: rotate(-2deg);
+}
+
+.wake-streams span:nth-child(3) {
+    top: 47px;
+    transform: rotate(3deg);
+}
+
+.wake-streams span:nth-child(4) {
+    top: 58px;
+    transform: rotate(8deg);
+}
+
 .distance-slider-container {
     position: relative;
     display: flex;
@@ -589,60 +812,6 @@ tr:hover {
     text-shadow: 0 0 5px var(--neon-pink-glow);
 }
 
-/* Circular Progress Dial for Efficiency */
-.efficiency-gauge-container {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    padding: 0.5rem 0;
-    position: relative;
-}
-
-.gauge-svg {
-    width: 120px;
-    height: 120px;
-    transform: rotate(-90deg);
-}
-
-.gauge-bg {
-    fill: none;
-    stroke: rgba(255, 255, 255, 0.05);
-    stroke-width: 10;
-}
-
-.gauge-fill {
-    fill: none;
-    stroke: var(--neon-cyan);
-    stroke-width: 10;
-    stroke-linecap: round;
-    stroke-dasharray: 314.16; /* 2 * PI * r (r=50) */
-    stroke-dashoffset: 314.16; /* starts empty */
-    transition: stroke-dashoffset 0.3s ease;
-    filter: drop-shadow(0 0 5px var(--neon-cyan));
-}
-
-.gauge-center-text {
-    position: absolute;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-}
-
-.gauge-number {
-    font-family: 'JetBrains Mono', monospace;
-    font-size: 1.5rem;
-    font-weight: bold;
-    color: var(--text-primary);
-}
-
-.gauge-label {
-    font-size: 0.65rem;
-    color: var(--text-secondary);
-    text-transform: uppercase;
-    margin-top: -2px;
-}
-
 /* Curve Fitting Chart Panel (Bottom of Middle Column) */
 .chart-panel {
     background: var(--panel-bg);
@@ -661,8 +830,8 @@ tr:hover {
 }
 
 .experiment-chart {
-    min-height: 280px;
-    height: 280px;
+    min-height: 320px;
+    height: 320px;
 }
 
 @media (max-width: 980px) {
