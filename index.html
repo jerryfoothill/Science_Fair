@@ -174,7 +174,7 @@
                     <div class="telemetry-card-label">Experimental Readout</div>
                     <div class="experiment-metric-grid">
                         <div>
-                            <span>F<sub>average</sub></span>
+                            <span id="exp-current-condition">Bottle + Straws</span>
                             <strong id="exp-current-force">0.026 N</strong>
                         </div>
                         <div>
@@ -189,8 +189,8 @@
                     <div class="experiment-mini-table">
                         <div class="mini-table-head">
                             <span>d</span>
-                            <span>F</span>
-                            <span>IQR</span>
+                            <span>Original</span>
+                            <span>Straightened</span>
                         </div>
                         <div id="experiment-trend-list"></div>
                     </div>
@@ -215,18 +215,46 @@
     <!-- Bottom Experimental Data & Final Parameter Plots -->
     <section class="panel experiment-panel">
         <div class="panel-title">
-            <span>Experimental Data & Final Parameter Plots</span>
+            <span>Experiment Revision & Airflow Comparison</span>
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"></path><path d="m19 9-5 5-4-4-3 3"></path></svg>
+        </div>
+        <div class="experiment-story-grid">
+            <div class="story-card">
+                <span class="story-kicker">Pilot test</span>
+                <strong>Original even-distance measurements were irregular.</strong>
+                <p>The first dataset is kept as evidence that unconditioned airflow made the system noisy.</p>
+            </div>
+            <div class="story-card">
+                <span class="story-kicker">Revision</span>
+                <strong>The new experiment compares three airflow conditions.</strong>
+                <p>Each revised condition should contain measurements from 0-20 cm at every 1 cm interval.</p>
+            </div>
+            <div class="story-card conclusion-card">
+                <span class="story-kicker">Interpretation</span>
+                <strong id="conclusion-summary">Waiting for final measured data.</strong>
+                <p id="conclusion-detail">The bottle + straws condition will be treated as the most controlled airflow setup.</p>
+            </div>
         </div>
         <div class="experiment-layout">
             <div class="table-container experiment-table">
+                <div class="table-toolbar">
+                    <label for="dataset-selector">Table dataset</label>
+                    <select id="dataset-selector">
+                        <option value="bottleStraws">Bottle + Straws</option>
+                        <option value="bottle">Bottle Nozzle</option>
+                        <option value="unmodified">Unmodified Hair Dryer</option>
+                        <option value="pilot">Pilot Test</option>
+                    </select>
+                </div>
                 <table id="data-table">
                     <thead>
                         <tr>
                             <th>d (cm)</th>
-                            <th>F<sub>average</sub> / F<sub>阻</sub> (N)</th>
+                            <th>n</th>
+                            <th>Median F<sub>阻</sub> (N)</th>
                             <th>Q<sub>1</sub> (N)</th>
                             <th>Q<sub>3</sub> (N)</th>
+                            <th>IQR (N)</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -236,9 +264,11 @@
             </div>
             <div class="experiment-plot-panel">
                 <div class="plot-tabs" aria-label="Experiment plot selector">
-                    <button class="plot-tab active" type="button" data-plot="force">F阻</button>
+                    <button class="plot-tab active" type="button" data-plot="compare">Median</button>
+                    <button class="plot-tab" type="button" data-plot="normalized">Normalized</button>
+                    <button class="plot-tab" type="button" data-plot="force">Selected Median</button>
                     <button class="plot-tab" type="button" data-plot="iqr">IQR</button>
-                    <button class="plot-tab" type="button" data-plot="rate">R</button>
+                    <button class="plot-tab" type="button" data-plot="noise">Noise</button>
                 </div>
                 <div class="chart-container experiment-chart">
                     <canvas id="aerodynamics-chart"></canvas>

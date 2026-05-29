@@ -338,11 +338,91 @@ tr:hover {
     padding: 1rem;
 }
 
+.experiment-story-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 0.75rem;
+}
+
+.story-card {
+    min-width: 0;
+    background: rgba(0, 0, 0, 0.22);
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    border-radius: 8px;
+    padding: 0.85rem;
+}
+
+.story-card strong {
+    display: block;
+    margin-top: 0.25rem;
+    color: var(--text-primary);
+    font-size: 0.95rem;
+    line-height: 1.25;
+}
+
+.story-card p {
+    margin-top: 0.4rem;
+    color: var(--text-secondary);
+    font-size: 0.82rem;
+    line-height: 1.35;
+}
+
+.story-kicker {
+    color: var(--neon-cyan);
+    font-size: 0.7rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+}
+
+.conclusion-card {
+    border-color: rgba(46, 252, 159, 0.22);
+}
+
 .experiment-layout {
     display: grid;
     grid-template-columns: minmax(0, 0.95fr) minmax(0, 1.25fr);
     gap: 1rem;
     align-items: stretch;
+}
+
+.table-toolbar {
+    position: sticky;
+    top: 0;
+    z-index: 12;
+    display: flex;
+    align-items: center;
+    gap: 0.65rem;
+    padding: 0.55rem;
+    background: rgba(0, 0, 0, 0.48);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.table-toolbar label {
+    flex: 0 0 auto;
+    color: var(--text-secondary);
+    font-size: 0.72rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.6px;
+}
+
+.table-toolbar select {
+    min-width: 0;
+    flex: 1;
+    color: var(--text-primary);
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(102, 252, 241, 0.2);
+    border-radius: 4px;
+    padding: 0.42rem 0.55rem;
+    font-family: 'Outfit', sans-serif;
+    font-weight: 700;
+    outline: none;
+}
+
+.table-toolbar select:focus {
+    border-color: var(--neon-cyan);
+    box-shadow: 0 0 8px rgba(0, 242, 254, 0.12);
 }
 
 .experiment-table {
@@ -360,19 +440,32 @@ tr:hover {
 
 .experiment-table th:nth-child(1),
 .experiment-table td:nth-child(1) {
-    width: 18%;
+    width: 14%;
 }
 
 .experiment-table th:nth-child(2),
 .experiment-table td:nth-child(2) {
-    width: 34%;
+    width: 12%;
 }
 
 .experiment-table th:nth-child(3),
-.experiment-table td:nth-child(3),
-.experiment-table th:nth-child(4),
-.experiment-table td:nth-child(4) {
+.experiment-table td:nth-child(3) {
     width: 24%;
+}
+
+.experiment-table th:nth-child(4),
+.experiment-table td:nth-child(4),
+.experiment-table th:nth-child(5),
+.experiment-table td:nth-child(5),
+.experiment-table th:nth-child(6),
+.experiment-table td:nth-child(6) {
+    width: 16%;
+}
+
+.table-input:disabled {
+    opacity: 0.78;
+    color: var(--text-secondary);
+    cursor: not-allowed;
 }
 
 .experiment-plot-panel {
@@ -835,6 +928,10 @@ tr:hover {
 }
 
 @media (max-width: 980px) {
+    .experiment-story-grid {
+        grid-template-columns: 1fr;
+    }
+
     .experiment-layout {
         grid-template-columns: 1fr;
     }
